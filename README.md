@@ -1,1 +1,1 @@
-cargo-test-xunit
+Converts Cargo test report into Xunit format.
