@@ -24,6 +24,8 @@ pub fn parse_test_report(output: Output) -> TestReport {
     let stdout = from_utf8(&output.stdout).unwrap();
     let stderr = from_utf8(&output.stderr).unwrap();
 
+    println!("{}", &stdout);
+
     let test_results_regex = Regex::new(r"test (?P<name>[\w:]+) \.\.\. (?P<result>[\w]+)").unwrap();
     let mut failed = 0;
 
