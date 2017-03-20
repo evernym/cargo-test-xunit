@@ -1,59 +1,65 @@
 extern crate sxd_document;
 
-use sxd_document::dom;
-use std::fmt;
-use std::marker;
+use sxd_document::dom::{Element, Root, Document};
+use std::fmt::Display;
 use sxd_document::Package;
 use parser::TestReport;
 
 
-struct Element<'a> {
-    elem: dom::Element<'a>,
+trait ElementBuilder <'a> {
+    fn set_attr <T: Display> (self, attr: &str, value: T) -> Element <'a>;
+    fn append_to_element  (self, parent: &Element) -> Element <'a>;
+    fn append_to_root  (self, parent: &Root) -> Element <'a>;
 }
 
-impl<'a> Element<'a> {
-    fn attr<A: fmt::Display + marker::Sized>(self, k: &str, v: A) -> Element<'a> {
-        self.elem.set_attribute_value(k, &format!("{}", v));
+impl <'a> ElementBuilder <'a>  for Element <'a> {
+    fn set_attr <T: Display> (self, attr: &str, value: T) -> Element <'a> {
+        self.set_attribute_value(attr, &format!("{}", value));
         self
     }
-    fn append_to<'b>(self, other: &Element<'b>) -> Element<'a> {
-        other.elem.append_child(self.elem);
+
+    fn append_to_element (self, parent: &Element) -> Element <'a> {
+        parent.append_child(self);
+        self
+    }
+
+    fn append_to_root (self, root: &Root) -> Element <'a> {
+        root.append_child(self);
         self
     }
 }
 
-pub fn build_xml <'a>(package : &'a Package, report: TestReport) -> sxd_document::dom::Document<'a> {
+pub fn build_xunit_report <'a>(package : &'a Package, report: TestReport) -> Document<'a> {
 
-    let d = package.as_document();
+    let dom = package.as_document();
 
     let test_suites =
-        Element { elem: d.create_element("testsuites") }
-            .attr("name", &report.name)
-            .attr("errors", report.failed)
-            .attr("tests", report.total);
-
-    d.root().append_child(test_suites.elem);
+        dom.create_element("testsuites")
+            .set_attr("name", &report.name)
+            .set_attr("errors", report.failed)
+            .set_attr("tests", report.total)
+            .append_to_root(&dom.root());
 
     let test_suite =
-        Element { elem: d.create_element("testsuite") }
-            .attr("name", &report.name)
-            .attr("errors", report.failed)
-            .attr("failures", report.failed)
-            .attr("tests", report.total)
-            .append_to(&test_suites);
+        dom.create_element("testsuite")
+            .set_attr("name", &report.name)
+            .set_attr("errors", report.failed)
+            .set_attr("failures", report.failed)
+            .set_attr("tests", report.total)
+            .append_to_element(&test_suites);
 
     for testcase in report.test_results {
         let test_case =
-            Element { elem: d.create_element("testcase") }
-                .attr("name", testcase.name)
-                .append_to(&test_suite);
+            dom.create_element("testcase")
+                .set_attr("name", testcase.name)
+                .append_to_element(&test_suite);
 
         if let Some(err) = testcase.error {
-            Element { elem: d.create_element("failure") }
-                .attr("message", err)
-                .append_to(&test_case);
+            dom.create_element("failure")
+                .set_attr("message", err)
+                .append_to_element(&test_case);
         }
     }
 
-    d
+    dom
 }
