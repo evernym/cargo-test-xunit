@@ -1,4 +1,10 @@
-Converts Cargo test report into Xunit format.
+#Converts Cargo test report into Xunit format.
 
-<b>Installing</b>
-<p>cargo install --git https://github.com/evernym/cargo-test-xunit
+## Install
+
+```
+cargo install --git https://github.com/evernym/cargo-test-xunit
+```
+
+## Run
+cargo test-xunit
